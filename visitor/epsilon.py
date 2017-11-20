@@ -17,8 +17,7 @@ class Dispatcher:
 
         def dispatch(itself, *args, **kwargs):
             # dispatch to handler for type(args[name])
-            print('Dispatcher.make_dispatch.dispatch, itself', itself)
-            print('Dispatcher.make_dispatch.dispatch, args', args)
+            # print('dispatch(', itself, args, kwargs, ')')
             arg_type = type(args[self.arg_index-1])
             return self.handlers[arg_type](itself, *args, **kwargs)
 
@@ -27,8 +26,8 @@ class Dispatcher:
 
     def when(self, arg_type):
         def when_decorator(handler):
-            print('Dispatcher.when.when_decorator, handler', handler)
-            print('Dispatcher.when.when_decorator, handler', handler.__code__.co_varnames)
+            # print('Dispatcher.when.when_decorator, handler', handler)
+            # print('Dispatcher.when.when_decorator, handler', handler.__code__.co_varnames)
             self.handlers[arg_type] = handler
             return handler
         return when_decorator

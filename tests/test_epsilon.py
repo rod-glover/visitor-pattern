@@ -2,7 +2,7 @@ import pytest
 from visitor.epsilon import G, H, dispatch_on
 
 
-class StackVisitor:
+class ExplicitStackVisitor:
     def __init__(self):
         self.count = 0
         self.stack = []
@@ -33,10 +33,34 @@ class StackVisitor:
         self.post()
 
 
+class ImplicitStackVisitor:
+    def output(self, prefix):
+        indent = '  ' * (len(prefix) - 1)
+        print("{}{}".format(indent, '.'.join(map(str, prefix))))
+
+
+    @dispatch_on('node')
+    def visit(self, node, prefix=[]):
+        """Generic dispatch function"""
+
+    @visit.when(G)
+    def visitG(self, node, prefix=[]):
+        prefix = prefix + [node.value]
+        self.output(prefix)
+        for child in node.children:
+            self.visit(child, prefix)
+
+    @visit.when(H)
+    def visitH(self, node, prefix=[]):
+        prefix = prefix + [node.value]
+        self.output(prefix)
+
+
 @pytest.mark.parametrize('visitor', [
-    StackVisitor(),
+    ExplicitStackVisitor(),
+    ImplicitStackVisitor(),
 ])
 def test_1(example_epsilon_1, visitor):
     print()
     visitor.visit(example_epsilon_1)
-    print('Total', visitor.count, 'nodes')
+    print('Total', getattr(visitor, 'count', 'no answer'), 'nodes')
