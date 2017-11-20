@@ -1,5 +1,5 @@
 import pytest
-from visitor.epsilon import G, H, dispatch_on
+from visitor.epsilon import G, H, Dispatcher
 
 
 class ExplicitStackVisitor:
@@ -16,19 +16,19 @@ class ExplicitStackVisitor:
     def post(self):
         self.stack.pop()
 
-    @dispatch_on('node')
+    @Dispatcher.on('node')
     def visit(self, node):
         """Generic dispatch function"""
 
     @visit.when(G)
-    def visitG(self, node):
+    def visit(self, node):
         self.pre(node)
         for child in node.children:
             self.visit(child)
         self.post()
 
     @visit.when(H)
-    def visitH(self, node):
+    def visit(self, node):
         self.pre(node)
         self.post()
 
@@ -39,19 +39,19 @@ class ImplicitStackVisitor:
         print("{}{}".format(indent, '.'.join(map(str, prefix))))
 
 
-    @dispatch_on('node')
+    @Dispatcher.on('node')
     def visit(self, node, prefix=[]):
         """Generic dispatch function"""
 
     @visit.when(G)
-    def visitG(self, node, prefix=[]):
+    def visit(self, node, prefix=[]):
         prefix = prefix + [node.value]
         self.output(prefix)
         for child in node.children:
             self.visit(child, prefix)
 
     @visit.when(H)
-    def visitH(self, node, prefix=[]):
+    def visit(self, node, prefix=[]):
         prefix = prefix + [node.value]
         self.output(prefix)
 
