@@ -1,25 +1,43 @@
+class Dispatcher:
+    def __init__(self, f, arg_name):
+        self.handlers = {}
+        self.arg_index = f.__code__.co_varnames.index(arg_name)
+        print('argnames', f.__code__.co_varnames)
+        print('index of', arg_name, self.arg_index)
+
+    # def __call__(self, *args, **kwargs):
+    #     # dispatch to handler for type(args[name])
+    #     print('Dispatcher.__call__, self', self)
+    #     print('Dispatcher.__call__, args', args)
+    #
+    #     arg_type = type(args[self.arg_index-1])
+    #     return self.handlers[arg_type](*args, **kwargs)
+
+    def make_dispatch(self):
+
+        def dispatch(itself, *args, **kwargs):
+            # dispatch to handler for type(args[name])
+            print('Dispatcher.make_dispatch.dispatch, itself', itself)
+            print('Dispatcher.make_dispatch.dispatch, args', args)
+            arg_type = type(args[self.arg_index-1])
+            return self.handlers[arg_type](itself, *args, **kwargs)
+
+        dispatch.when = self.when
+        return dispatch
+
+    def when(self, arg_type):
+        def when_decorator(handler):
+            print('Dispatcher.when.when_decorator, handler', handler)
+            print('Dispatcher.when.when_decorator, handler', handler.__code__.co_varnames)
+            self.handlers[arg_type] = handler
+            return handler
+        return when_decorator
+
+# TODO: Make this a class method of Dispatcher
 def dispatch_on(arg_name):
     def dispatch_decorator(f):
-        class Wrapper:
-            # TODO: Factor this out? Like delta?
-            def __init__(self):
-                self.handlers = {}
-                self.arg_index = f.__code__.co_varnames.index(arg_name)
-                print('argnames', f.__code__.co_varnames)
-                print('index of', arg_name, self.arg_index)
-
-            def __call__(self, *args, **kwargs):
-                # dispatch to handler for type(args[name])
-                arg_type = type(args[self.arg_index-1])
-                return self.handlers[arg_type](*args, **kwargs)
-
-            def when(self, arg_type):
-                def when_decorator(f):
-                    self.handlers[arg_type] = f
-                return when_decorator
-
-        return Wrapper()
-
+        # return Dispatcher(f, arg_name)
+        return Dispatcher(f, arg_name).make_dispatch()
     return dispatch_decorator
 
 

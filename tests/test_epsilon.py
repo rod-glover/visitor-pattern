@@ -19,12 +19,12 @@ class StackVisitor:
     @dispatch_on('node')
     def visit(self, node):
         """Generic dispatch function"""
-        pass
 
     @visit.when(G)
     def visitG(self, node):
         self.pre(node)
-        map(self.visit, node.children)
+        for child in node.children:
+            self.visit(child)
         self.post()
 
     @visit.when(H)
