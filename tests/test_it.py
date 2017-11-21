@@ -1,5 +1,6 @@
 import pytest
-from visitor.epsilon import G, H, Dispatcher
+from visitor import Dispatcher
+from visitor.simple_classes import Internal, Leaf
 
 
 class ExplicitStackVisitor:
@@ -20,14 +21,14 @@ class ExplicitStackVisitor:
     def visit(self, node):
         """Generic dispatch function"""
 
-    @visit.when(G)
+    @visit.when(Internal)
     def visit(self, node):
         self.pre(node)
         for child in node.children:
             self.visit(child)
         self.post()
 
-    @visit.when(H)
+    @visit.when(Leaf)
     def visit(self, node):
         self.pre(node)
         self.post()
@@ -43,14 +44,14 @@ class ImplicitStackVisitor:
     def visit(self, node, prefix=[]):
         """Generic dispatch function"""
 
-    @visit.when(G)
+    @visit.when(Internal)
     def visit(self, node, prefix=[]):
         prefix = prefix + [node.value]
         self.output(prefix)
         for child in node.children:
             self.visit(child, prefix)
 
-    @visit.when(H)
+    @visit.when(Leaf)
     def visit(self, node, prefix=[]):
         prefix = prefix + [node.value]
         self.output(prefix)
@@ -60,7 +61,7 @@ class ImplicitStackVisitor:
     ExplicitStackVisitor(),
     ImplicitStackVisitor(),
 ])
-def test_1(example_epsilon_1, visitor):
+def test_1(simple_example_1, visitor):
     print()
-    visitor.visit(example_epsilon_1)
-    print('Total', getattr(visitor, 'count', 'no answer'), 'nodes')
+    visitor.visit(simple_example_1)
+    print('Total', getattr(visitor, 'count', '--'), 'nodes')
