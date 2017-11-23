@@ -17,18 +17,18 @@ class ExplicitStackVisitor:
     def post(self):
         self.stack.pop()
 
-    @Dispatcher.on('node')
-    def visit(self, node):
+    @Dispatcher.of()
+    def visit(self):
         """Generic dispatch function"""
 
-    @visit.when(Internal)
+    @visit.signature(Internal)
     def visit(self, node):
         self.pre(node)
         for child in node.children:
             self.visit(child)
         self.post()
 
-    @visit.when(Leaf)
+    @visit.signature(Leaf)
     def visit(self, node):
         self.pre(node)
         self.post()
@@ -39,19 +39,18 @@ class ImplicitStackVisitor:
         indent = '  ' * (len(prefix) - 1)
         print("{}{}".format(indent, '.'.join(map(str, prefix))))
 
-
-    @Dispatcher.on('node')
-    def visit(self, node, prefix=[]):
+    @Dispatcher.of()
+    def visit(self):
         """Generic dispatch function"""
 
-    @visit.when(Internal)
+    @visit.signature(Internal)
     def visit(self, node, prefix=[]):
         prefix = prefix + [node.value]
         self.output(prefix)
         for child in node.children:
-            self.visit(child, prefix)
+            self.visit(child, prefix=prefix)
 
-    @visit.when(Leaf)
+    @visit.signature(Leaf)
     def visit(self, node, prefix=[]):
         prefix = prefix + [node.value]
         self.output(prefix)
@@ -61,7 +60,7 @@ class ImplicitStackVisitor:
     ExplicitStackVisitor(),
     ImplicitStackVisitor(),
 ])
-def test_1(simple_example_1, visitor):
+def test_dispatch_on_signature(simple_example_1, visitor):
     print()
     visitor.visit(simple_example_1)
     print('Total', getattr(visitor, 'count', '--'), 'nodes')

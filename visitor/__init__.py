@@ -49,9 +49,8 @@ class Dispatcher:
     e.g., full and partial method signatures, values of arguments.
     """
 
-    def __init__(self, method, arg_name):
+    def __init__(self, method, arg_name=None):
         self.handlers = {}
-        arg_index = method.__code__.co_varnames.index(arg_name)
 
         def dispatch_on_named_arg(*args, **kwargs):
             """
@@ -59,11 +58,19 @@ class Dispatcher:
             Dispatches to the handler registered by ``when`` for the type
             of the arg named in ``arg_name``.
             """
+            arg_index = method.__code__.co_varnames.index(arg_name)
             arg_type = type(args[arg_index])
             return self.handlers[arg_type](*args, **kwargs)
 
         dispatch_on_named_arg.when = self.when
         self.dispatch_on_named_arg = dispatch_on_named_arg
+
+        def dispatch_on_signature(*args, **kwargs):
+            signature = tuple(map(type, args[1:]))
+            return self.handlers[signature](*args, **kwargs)
+
+        dispatch_on_signature.signature = self.signature
+        self.dispatch_on_signature = dispatch_on_signature
 
     @classmethod
     def on(cls, arg_name):
@@ -95,9 +102,29 @@ class Dispatcher:
 
         return decorator
 
-    def of(self):
+    @classmethod
+    def of(cls):
         """
         Return a decorator that creates an instance of this class for
-        dispatching on method signatures
-        :return:
+        dispatching on method signatures.
+        Replaces the generic method with the dispatcher
         """
+        def decorator(method):
+            return cls(method).dispatch_on_signature
+
+        return decorator
+
+    def signature(self, *signature):
+        def decorator(handler):
+            """
+            Register the specific handler for signature ``signature``.
+            Replaces the specific handler with the dispatcher function so that
+            registering can be "chained" (if desired) by reusing the name
+            of the generic handler (see class method ``on``) as the name
+            of each concrete handler.
+            """
+            self.handlers[signature] = handler
+            return self.dispatch_on_signature
+
+        return decorator
+
