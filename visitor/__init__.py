@@ -51,19 +51,19 @@ class Dispatcher:
 
     def __init__(self, method, arg_name):
         self.handlers = {}
-        arg_index = method.__code__.co_varnames.index(arg_name) - 1
+        arg_index = method.__code__.co_varnames.index(arg_name)
 
-        def dispatch(itself, *args, **kwargs):
+        def dispatch_on_named_arg(*args, **kwargs):
             """
             Dispatcher for this instance.
             Dispatches to the handler registered by ``when`` for the type
             of the arg named in ``arg_name``.
             """
             arg_type = type(args[arg_index])
-            return self.handlers[arg_type](itself, *args, **kwargs)
+            return self.handlers[arg_type](*args, **kwargs)
 
-        dispatch.when = self.when
-        self.dispatch = dispatch
+        dispatch_on_named_arg.when = self.when
+        self.dispatch_on_named_arg = dispatch_on_named_arg
 
     @classmethod
     def on(cls, arg_name):
@@ -73,7 +73,7 @@ class Dispatcher:
         which replaces the generic method with the dispatcher.
         """
         def decorator(method):
-            return cls(method, arg_name).dispatch
+            return cls(method, arg_name).dispatch_on_named_arg
 
         return decorator
 
@@ -91,6 +91,13 @@ class Dispatcher:
             of each concrete handler.
             """
             self.handlers[arg_type] = handler
-            return self.dispatch
+            return self.dispatch_on_named_arg
 
         return decorator
+
+    def of(self):
+        """
+        Return a decorator that creates an instance of this class for
+        dispatching on method signatures
+        :return:
+        """
