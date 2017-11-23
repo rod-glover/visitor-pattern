@@ -6,7 +6,10 @@ https://chris-lamb.co.uk/posts/visitor-pattern-in-python
 class Dispatcher:
     """
     Class that manages dispatching method calls from a generic handler to
-    specific handlers based on the type of a named argument in the handler(s).
+    specific handlers based on either
+
+    - the signature of the method
+    - the type of a named argument in the handler(s)
 
     This class provides decorators for methods in a client class that define
     a generic handler and specific handlers for a method.
@@ -15,7 +18,24 @@ class Dispatcher:
     implements a selector (if statements, or a dict) that dispatches calls
     of a generic handler to calls of specific handlers.
 
-    Usage (generic method definition):
+    Defining a signature dispatcher::
+
+        class C:
+            @Dispatcher
+            def method(self):
+                '''Generic handler: No implementation.'''
+
+            @method.signature(TypeA1, TypeA2, ...)
+            def method(self, arg1, arg2, ...):
+                '''Specific handler: Implementation for signature (TypeA1, TypeA2, ...)'''
+                ...
+
+            @method.signature(TypeB1, TypeB2, ...)
+            def method(self, arg1, arg2, ...):
+                '''Specific handler: Implementation for signature (TypeB1, TypeB2, ...)'''
+                ...
+
+    Defining a named-arg dispatcher::
 
         class C:
             @Dispatcher.on('name')
@@ -32,25 +52,29 @@ class Dispatcher:
                 '''Specific handler: Implementation for type(name) == Type2'''
                 ...
 
-    Note reuse of method name ``method`` for both generic handler and
+    Note reuse of method name (``method``) for both generic handler and
     specific handlers. This is not required, but it makes for cleaner code.
 
-    Usage (generic method invocation)::
+    Using a dispatcher (signature or named-arg)::
 
         c = C()
-        c.method(..., name, ...)
+        c.method(...)
 
     Any number of generic methods can be defined in a class. Each must have
-    a distinct name, but can reuse that name for generic and specific method
-    definitions.
-
-    It's easy to imagine a more sophisticated version of this class
-    that dispatches based on more complicated conditions on the arguments,
-    e.g., full and partial method signatures, values of arguments.
+    a distinct name, but can reuse that name for definitions of both generic
+    and specific methods.
     """
 
     def __init__(self, method, arg_name=None):
         self.handlers = {}
+
+
+        def dispatch_on_signature(*args, **kwargs):
+            signature = tuple(map(type, args[1:]))
+            return self.handlers[signature](*args, **kwargs)
+
+        dispatch_on_signature.signature = self.signature
+        self.dispatch_on_signature = dispatch_on_signature
 
         def dispatch_on_named_arg(*args, **kwargs):
             """
@@ -65,12 +89,31 @@ class Dispatcher:
         dispatch_on_named_arg.when = self.when
         self.dispatch_on_named_arg = dispatch_on_named_arg
 
-        def dispatch_on_signature(*args, **kwargs):
-            signature = tuple(map(type, args[1:]))
-            return self.handlers[signature](*args, **kwargs)
+    @classmethod
+    def __call__(cls):
+        """
+        Return a decorator that creates an instance of this class for
+        dispatching on method signatures.
+        Replaces the generic method with the dispatcher
+        """
+        def decorator(method):
+            return cls(method).dispatch_on_signature
 
-        dispatch_on_signature.signature = self.signature
-        self.dispatch_on_signature = dispatch_on_signature
+        return decorator
+
+    def signature(self, *signature):
+        def decorator(handler):
+            """
+            Register the specific handler for signature ``signature``.
+            Replaces the specific handler with the dispatcher function so that
+            registering can be "chained" (if desired) by reusing the name
+            of the generic handler (see class method ``__call__``) as the name
+            of each concrete handler.
+            """
+            self.handlers[signature] = handler
+            return self.dispatch_on_signature
+
+        return decorator
 
     @classmethod
     def on(cls, arg_name):
@@ -99,32 +142,6 @@ class Dispatcher:
             """
             self.handlers[arg_type] = handler
             return self.dispatch_on_named_arg
-
-        return decorator
-
-    @classmethod
-    def __call__(cls):
-        """
-        Return a decorator that creates an instance of this class for
-        dispatching on method signatures.
-        Replaces the generic method with the dispatcher
-        """
-        def decorator(method):
-            return cls(method).dispatch_on_signature
-
-        return decorator
-
-    def signature(self, *signature):
-        def decorator(handler):
-            """
-            Register the specific handler for signature ``signature``.
-            Replaces the specific handler with the dispatcher function so that
-            registering can be "chained" (if desired) by reusing the name
-            of the generic handler (see class method ``on``) as the name
-            of each concrete handler.
-            """
-            self.handlers[signature] = handler
-            return self.dispatch_on_signature
 
         return decorator
 
