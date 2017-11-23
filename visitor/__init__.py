@@ -67,15 +67,20 @@ class Dispatcher:
 
     def __init__(self, method, arg_name=None):
         self.handlers = {}
+        if arg_name:
+            self.dispatch = self.make_dispatch_on_named_arg(method, arg_name)
+        else:
+            self.dispatch = self.make_dispatch_on_signature()
 
-
+    def make_dispatch_on_signature(self):
         def dispatch_on_signature(*args, **kwargs):
             signature = tuple(map(type, args[1:]))
             return self.handlers[signature](*args, **kwargs)
 
         dispatch_on_signature.signature = self.signature
-        self.dispatch_on_signature = dispatch_on_signature
+        return dispatch_on_signature
 
+    def make_dispatch_on_named_arg(self, method, arg_name):
         def dispatch_on_named_arg(*args, **kwargs):
             """
             Dispatcher for this instance.
@@ -87,7 +92,7 @@ class Dispatcher:
             return self.handlers[arg_type](*args, **kwargs)
 
         dispatch_on_named_arg.when = self.when
-        self.dispatch_on_named_arg = dispatch_on_named_arg
+        return dispatch_on_named_arg
 
     @classmethod
     def __call__(cls):
@@ -97,7 +102,7 @@ class Dispatcher:
         Replaces the generic method with the dispatcher
         """
         def decorator(method):
-            return cls(method).dispatch_on_signature
+            return cls(method).dispatch
 
         return decorator
 
@@ -111,7 +116,7 @@ class Dispatcher:
             of each concrete handler.
             """
             self.handlers[signature] = handler
-            return self.dispatch_on_signature
+            return self.dispatch
 
         return decorator
 
@@ -123,7 +128,7 @@ class Dispatcher:
         which replaces the generic method with the dispatcher.
         """
         def decorator(method):
-            return cls(method, arg_name).dispatch_on_named_arg
+            return cls(method, arg_name).dispatch
 
         return decorator
 
@@ -141,7 +146,7 @@ class Dispatcher:
             of each concrete handler.
             """
             self.handlers[arg_type] = handler
-            return self.dispatch_on_named_arg
+            return self.dispatch
 
         return decorator
 
