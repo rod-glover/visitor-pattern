@@ -17,7 +17,7 @@ class ExplicitStackVisitor:
     def post(self):
         self.stack.pop()
 
-    @Dispatcher.of()
+    @Dispatcher
     def visit(self):
         """Generic dispatch function"""
 
@@ -39,7 +39,7 @@ class ImplicitStackVisitor:
         indent = '  ' * (len(prefix) - 1)
         print("{}{}".format(indent, '.'.join(map(str, prefix))))
 
-    @Dispatcher.of()
+    @Dispatcher
     def visit(self):
         """Generic dispatch function"""
 

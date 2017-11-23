@@ -103,7 +103,7 @@ class Dispatcher:
         return decorator
 
     @classmethod
-    def of(cls):
+    def __call__(cls):
         """
         Return a decorator that creates an instance of this class for
         dispatching on method signatures.
